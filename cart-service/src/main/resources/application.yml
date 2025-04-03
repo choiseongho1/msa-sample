@@ -1,0 +1,13 @@
+# 공통 설정
+server:
+  port: 8084
+
+spring:
+  application:
+    name: cart-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
+  cloud:
+    config:
+      profile: ${SPRING_PROFILES_ACTIVE:local}  # Config 서버에서 가져올 프로필
+      fail-fast: true

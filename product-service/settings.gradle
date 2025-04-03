@@ -1,0 +1,4 @@
+rootProject.name = 'product-service'
+
+include ':common'
+project(':common').projectDir = new File(settingsDir, '../common') // 필요에 따라 경로 수정

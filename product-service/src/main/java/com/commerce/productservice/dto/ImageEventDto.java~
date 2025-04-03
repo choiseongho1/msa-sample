@@ -1,0 +1,12 @@
+package com.commerce.productservice.dto;
+
+/**
+ * explain the Class File
+ *
+ * @author : choiseongho
+ * @fileName : ImageEventDto.java
+ * @since : 2025-03-14
+ */
+public class ImageEventDto {
+
+}

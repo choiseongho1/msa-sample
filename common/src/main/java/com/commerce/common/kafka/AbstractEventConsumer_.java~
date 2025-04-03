@@ -1,0 +1,41 @@
+package com.commerce.common.kafka;
+
+import com.commerce.common.dto.EventMessageDto;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@RequiredArgsConstructor
+public abstract class AbstractEventConsumer {
+
+    private final ObjectMapper objectMapper;
+
+
+    protected abstract void processEvent(EventMessageDto<?> eventMessage);
+
+    @KafkaListener(topics = "${kafka.topic.name}", groupId = "${kafka.consumer.group-id}")
+    public void consume(String message) {
+        try {
+            EventMessageDto<?> eventMessage = objectMapper.readValue(message,
+                new TypeReference<EventMessageDto<?>>() {});
+
+            log.info("이벤트 수신: eventType={}, eventId={}, source={}",
+                eventMessage.getEventType(), eventMessage.getEventId(), eventMessage.getSource());
+
+            processEvent(eventMessage);
+        } catch (Exception e) {
+            log.error("이벤트 처리 실패: message={}, error={}", message, e.getMessage(), e);
+        }
+    }
+
+
+    protected <T> T convertPayload(EventMessageDto<?> eventMessage, Class<T> targetClass) {
+        return objectMapper.convertValue(eventMessage.getPayload(), targetClass);
+    }
+}

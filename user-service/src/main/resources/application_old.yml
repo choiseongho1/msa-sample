@@ -1,0 +1,114 @@
+# 공통 설정
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+
+  config:
+    import: "optional:configserver:"
+
+  cloud:
+    config:
+      uri: http://localhost:8888
+      name: comon  # 이렇게 하면 클라이언트가 user-service.yml 대신 test.yml을 찾습니다
+
+  profiles:
+    active: local
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  token:
+    secretKey: CJQ/O+LTpXHjBnaoDj9Feni1dtHWNMU6I1nHYywa+HA=
+
+springdoc:
+  api-docs:
+    path: /v1/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+
+
+# 공통 설정 부분에 추가
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    shutdown:
+      enabled: false
+  info:
+    env:
+      enabled: true
+
+---
+# local 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecommerce
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost
+    port: 6379
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka
+
+logging:
+  file:
+    name: D:/2025/e-commerce/logs/e-commerce.log
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    com.commerce.userservice: INFO
+
+---
+# dev 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://mysql-service:3306/ecommerce
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: redis-service
+    port: 6379
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka-service:8761/eureka
+
+logging:
+  level:
+    root: INFO
+    com.commerce.userservice: INFO

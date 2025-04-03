@@ -1,0 +1,219 @@
+# 공통 설정
+server:
+  port: 8000
+
+spring:
+  application:
+    name: apigateway-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
+  cloud:
+    config:
+      profile: ${SPRING_PROFILES_ACTIVE:local}  # Config 서버에서 가져올 프로필
+      fail-fast: true
+
+    gateway:
+      observability:
+        enabled: true
+      httpclient:
+
+        connect-timeout: 1000        # 연결 timeout (ms)
+        response-timeout: 3s         # 응답 대기 timeout
+      default-filters:
+        - name: LoggingFilter
+        - name: CircuitBreaker
+          args:
+            name: defaultCircuitBreaker
+            fallbackUri: forward:/fallback
+            statusCodes:
+              - INTERNAL_SERVER_ERROR
+              - SERVICE_UNAVAILABLE
+              - GATEWAY_TIMEOUT
+              - NOT_FOUND
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+            methods: GET
+            backoff:
+              firstBackoff: 100ms
+              maxBackoff: 1000ms
+              factor: 2
+
+        - name: AuthorizationHeaderFilter   # 모든 요청에 JWT 인증 필터 적용
+          args:
+            excludePaths:
+#            swagger 용
+              - /**/swagger-ui/index.html/**            # swagger-ui.html는 JWT 검증 제외
+#            실제 API 호출
+              - /user/auth/login                   # 로그인 요청은 JWT 검증 제외
+              - /user/signup                  # 회원가입 요청은 JWT 검증 제외
+      routes:
+#        ----------------------------------------------------------------------
+#        Swagger 라우팅 영역
+#        ----------------------------------------------------------------------
+
+        # USER-SERVICE-SWAGGER 처리
+        - id: user-service-swagger
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user/v1/api-docs
+          filters:
+            - RewritePath=/user/v1/api-docs, /v1/api-docs
+
+        # PRODUCT-SERVICE-SWAGGER 처리
+        - id: product-service-swagger
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/product/v1/api-docs
+          filters:
+            - RewritePath=/product/v1/api-docs, /v1/api-docs
+
+        # IMAGE-SERVICE-SWAGGER 처리
+        - id: image-service-swagger
+          uri: lb://IMAGE-SERVICE
+          predicates:
+            - Path=/image/v1/api-docs
+          filters:
+            - RewritePath=/image/v1/api-docs, /v1/api-docs
+
+
+        # ORDER-SERVICE-SWAGGER 처리
+        - id: order-service-swagger
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order/v1/api-docs
+          filters:
+            - RewritePath=/order/v1/api-docs, /v1/api-docs
+
+
+        # CART-SERVICE-SWAGGER 처리
+        - id: cart-service-swagger
+          uri: lb://CART-SERVICE
+          predicates:
+            - Path=/cart/v1/api-docs
+          filters:
+            - RewritePath=/cart/v1/api-docs, /v1/api-docs
+
+
+        # PAYMENT-SERVICE-SWAGGER 처리
+        - id: payment-service-swagger
+          uri: lb://CART-SERVICE
+          predicates:
+            - Path=/payment/v1/api-docs
+          filters:
+            - RewritePath=/payment/v1/api-docs, /v1/api-docs
+
+#        ----------------------------------------------------------------------
+#        실제 라우팅 영역
+#        ----------------------------------------------------------------------
+
+        # USER-SERVICE 라우팅
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /${segment}
+
+        # PRODUCT-SERVICE 라우팅
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/product-service/**
+          filters:
+            - RewritePath=/product-service/(?<segment>.*), /${segment}
+
+        # IMAGE-SERVICE 라우팅
+        - id: image-service
+          uri: lb://IMAGE-SERVICE
+          predicates:
+            - Path=/image-service/**
+          filters:
+            - RewritePath=/image-service/(?<segment>.*), /${segment}
+
+        # ORDER-SERVICE 라우팅
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order-service/**
+          filters:
+            - RewritePath=/order-service/(?<segment>.*), /${segment}
+
+        # CART-SERVICE 라우팅
+        - id: cart-service
+          uri: lb://CART-SERVICE
+          predicates:
+            - Path=/cart-service/**
+          filters:
+            - RewritePath=/cart-service/(?<segment>.*), /${segment}
+
+        # PAYMENT-SERVICE 라우팅
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/payment-service/**
+          filters:
+            - RewritePath=/payment-service/(?<segment>.*), /${segment}
+
+jwt:
+  token:
+    secretKey: CJQ/O+LTpXHjBnaoDj9Feni1dtHWNMU6I1nHYywa+HA=
+
+# ✅ Swagger UI 설정 (경로 변경 없음)
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    servers:
+      - url: http://localhost:8000  # ✅ API Gateway 경유하도록 설정
+    urls:
+      - name: user-service
+        url: /user/v1/api-docs
+      - name: product-service
+        url: /product/v1/api-docs
+      - name: image-service
+        url: /image/v1/api-docs
+      - name: order-service
+        url: /order/v1/api-docs
+      - name: cart-service
+        url: /cart/v1/api-docs
+      - name: payment-service
+        url: /payment/v1/api-docs
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        registerHealthIndicator: true
+    instances:
+      productCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      orderCircuitBreaker:
+        baseConfig: default
+      cartCircuitBreaker:
+        baseConfig: default
+      paymentCircuitBreaker:
+        baseConfig: default
+      imageCircuitBreaker:
+        baseConfig: default
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health, info, circuitbreakers, prometheus
+
+
+

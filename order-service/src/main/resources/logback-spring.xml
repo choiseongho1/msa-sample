@@ -1,0 +1,29 @@
+<configuration>
+  <!-- 파일 Appender -->
+  <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/e-commerce.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>logs/e-commerce-%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory> <!-- 최대 30일의 로그 유지 -->
+    </rollingPolicy>
+    <encoder>
+      <pattern>[ORDER-SERVICE] %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- 콘솔 Appender 추가 -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- 로그 레벨 설정 -->
+  <logger name="com.commerce" level="DEBUG" />
+  <logger name="org.springframework.web" level="INFO" />
+
+  <root level="INFO">
+    <appender-ref ref="ROLLING" />
+    <appender-ref ref="CONSOLE" /> <!-- 콘솔 Appender 참조 추가 -->
+  </root>
+</configuration>

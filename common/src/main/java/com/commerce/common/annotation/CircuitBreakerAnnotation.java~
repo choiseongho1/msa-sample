@@ -1,0 +1,12 @@
+package com.commerce.common.annotation;
+
+/**
+ * explain the Class File
+ *
+ * @author : choiseongho
+ * @fileName : CircuitBreakerAnnotation.java
+ * @since : 2025-03-06
+ */
+public class CircuitBreakerAnnotation {
+
+}

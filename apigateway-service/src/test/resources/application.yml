@@ -1,0 +1,120 @@
+# 공통 설정
+server:
+  port: 8000
+
+spring:
+  application:
+    name: apigateway-service
+  config:
+    import: "configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
+  cloud:
+    config:
+      profile: ${SPRING_PROFILES_ACTIVE:local}  # Config 서버에서 가져올 프로필
+      fail-fast: true
+
+    gateway:
+      httpclient:
+        connect-timeout: 1000        # 연결 timeout (ms)
+        response-timeout: 3s         # 응답 대기 timeout
+      default-filters:
+        - name: LoggingFilter
+        - name: CircuitBreaker
+          args:
+            name: defaultCircuitBreaker
+            fallbackUri: forward:/fallback
+            statusCodes:
+              - INTERNAL_SERVER_ERROR
+              - SERVICE_UNAVAILABLE
+              - GATEWAY_TIMEOUT
+              - NOT_FOUND
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+            methods: GET
+            backoff:
+              firstBackoff: 100ms
+              maxBackoff: 1000ms
+              factor: 2
+      routes:
+
+        #        ----------------------------------------------------------------------
+        #        실제 라우팅 영역
+        #        ----------------------------------------------------------------------
+
+        # USER-SERVICE 라우팅
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - RewritePath=/user-service/(?<segment>.*), /${segment}
+
+        # PRODUCT-SERVICE 라우팅
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/product-service/**
+          filters:
+            - RewritePath=/product-service/(?<segment>.*), /${segment}
+
+        # IMAGE-SERVICE 라우팅
+        - id: image-service
+          uri: lb://IMAGE-SERVICE
+          predicates:
+            - Path=/image-service/**
+          filters:
+            - RewritePath=/image-service/(?<segment>.*), /${segment}
+
+        # ORDER-SERVICE 라우팅
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order-service/**
+          filters:
+            - RewritePath=/order-service/(?<segment>.*), /${segment}
+
+        # CART-SERVICE 라우팅
+        - id: cart-service
+          uri: lb://CART-SERVICE
+          predicates:
+            - Path=/cart-service/**
+          filters:
+            - RewritePath=/cart-service/(?<segment>.*), /${segment}
+
+        # PAYMENT-SERVICE 라우팅
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/payment-service/**
+          filters:
+            - RewritePath=/payment-service/(?<segment>.*), /${segment}
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        registerHealthIndicator: true
+    instances:
+      productCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      orderCircuitBreaker:
+        baseConfig: default
+      cartCircuitBreaker:
+        baseConfig: default
+      paymentCircuitBreaker:
+        baseConfig: default
+      imageCircuitBreaker:
+        baseConfig: default
+
+
+
